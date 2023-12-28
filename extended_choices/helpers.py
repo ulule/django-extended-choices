@@ -107,7 +107,7 @@ class ChoiceAttributeMixin(object):
         if isinstance(self, Promise):
             # Special case to manage lazy django stuff like ugettext_lazy
             # pylint: disable=protected-access
-            super(ChoiceAttributeMixin, self).__init__(value._proxy____args, value._proxy____kw)
+            super(ChoiceAttributeMixin, self).__init__(value._args, value._kw)
         else:
             super(ChoiceAttributeMixin, self).__init__()
 
