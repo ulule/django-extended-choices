@@ -325,6 +325,17 @@ class Choices(list):
             self.values[choice_entry.value] = choice_entry
             self.displays[choice_entry.display] = choice_entry
 
+            # Will be removed one day. See the "compatibility" section in the documentation.
+            if self.retro_compatibility:
+                # To get  display strings from their values.
+                self.CHOICES_DICT[choice_entry.value] = choice_entry.display
+                # To get values from their display strings.
+                self.REVERTED_CHOICES_DICT[choice_entry.display] = choice_entry.value
+                # To get values from their constant names.
+                self.CHOICES_CONST_DICT[choice_entry.constant] = choice_entry.value
+                # To get constant names from their values.
+                self.REVERTED_CHOICES_CONST_DICT[choice_entry.value] = choice_entry.constant
+
         return constants
 
     def add_choices(self, *choices, **kwargs):
@@ -402,35 +413,6 @@ class Choices(list):
             subset_name = kwargs['name']
 
         constants = self._convert_choices(choices)
-
-        for choice_tuple in choices:
-            # Convert the choice tuple in a ``ChoiceEntry`` instance if it's not already done.
-            # It allows to share choice entries between a ``Choices`` instance and its subsets.
-            if not isinstance(choice_tuple, self.ChoiceEntryClass):
-                choice_entry = self.ChoiceEntryClass(choice_tuple)
-            else:
-                choice_entry = choice_tuple
-            # Append to the main list the choice as expected by django: (value, display name).
-            self.append(choice_entry.choice)
-            # And the ``ChoiceEntry`` instance to our own internal list.
-            self.entries.append(choice_entry)
-            # Make the value accessible via an attribute (the constant being its name).
-            setattr(self, choice_entry.constant, choice_entry.value)
-            # Fill dicts to access the ``ChoiceEntry`` instance by its constant, value or display..
-            self.constants[choice_entry.constant] = choice_entry
-            self.values[choice_entry.value] = choice_entry
-            self.displays[choice_entry.display] = choice_entry
-
-            # Will be removed one day. See the "compatibility" section in the documentation.
-            if self.retro_compatibility:
-                # To get  display strings from their values.
-                self.CHOICES_DICT[choice_entry.value] = choice_entry.display
-                # To get values from their display strings.
-                self.REVERTED_CHOICES_DICT[choice_entry.display] = choice_entry.value
-                # To get values from their constant names.
-                self.CHOICES_CONST_DICT[choice_entry.constant] = choice_entry.value
-                # To get constant names from their values.
-                self.REVERTED_CHOICES_CONST_DICT[choice_entry.value] = choice_entry.constant
 
         # Will be removed one day. See the "compatibility" section in the documentation.
         if self.retro_compatibility:
