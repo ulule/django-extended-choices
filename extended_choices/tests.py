@@ -11,8 +11,6 @@ The documentation format in this file is numpydoc_.
 
 """
 
-from __future__ import unicode_literals
-
 from copy import copy, deepcopy
 
 try:
