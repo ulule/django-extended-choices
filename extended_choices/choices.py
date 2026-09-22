@@ -58,8 +58,8 @@ The documentation format in this file is numpydoc_.
 
 """
 
-
 from collections import OrderedDict
+
 try:
     from collections.abc import Mapping
 except ImportError:
@@ -68,13 +68,13 @@ except ImportError:
 from .helpers import ChoiceEntry
 
 __all__ = [
-    'Choices',
-    'OrderedChoices',
-    'AutoDisplayChoices',
-    'AutoChoices',
+    "Choices",
+    "OrderedChoices",
+    "AutoDisplayChoices",
+    "AutoChoices",
 ]
 
-_NO_SUBSET_NAME_ = '__NO_SUBSET_NAME__'
+_NO_SUBSET_NAME_ = "__NO_SUBSET_NAME__"
 
 
 class Choices(list):
@@ -202,7 +202,7 @@ class Choices(list):
         super(Choices, self).__init__()
 
         # Class to use for dicts.
-        self.dict_class = kwargs.get('dict_class', dict)
+        self.dict_class = kwargs.get("dict_class", dict)
 
         # List of ``ChoiceEntry``, one for each choice in this instance.
         self.entries = []
@@ -216,7 +216,7 @@ class Choices(list):
         self.displays = self.dict_class()
 
         # Will be removed one day. See the "compatibility" section in the documentation.
-        self.retro_compatibility = kwargs.get('retro_compatibility', True)
+        self.retro_compatibility = kwargs.get("retro_compatibility", True)
         if self.retro_compatibility:
             # Hold the list of tuples as expected by django.
             self.CHOICES = tuple()
@@ -231,10 +231,10 @@ class Choices(list):
 
         # For now this instance is mutable: we need to add the given choices.
         self._mutable = True
-        self.add_choices(*choices, name=kwargs.get('name', None))
+        self.add_choices(*choices, name=kwargs.get("name", None))
 
         # Now we can set ``_mutable`` to its correct value.
-        self._mutable = kwargs.get('mutable', True)
+        self._mutable = kwargs.get("mutable", True)
 
     @property
     def choices(self):
@@ -269,27 +269,35 @@ class Choices(list):
         constants = [c[0] for c in choices]
         constants_doubles = [c for c in constants if constants.count(c) > 1]
         if constants_doubles:
-            raise ValueError("You cannot declare two constants with the same constant name. "
-                             "Problematic constants: %s " % list(set(constants_doubles)))
+            raise ValueError(
+                "You cannot declare two constants with the same constant name. "
+                "Problematic constants: %s " % list(set(constants_doubles))
+            )
 
         # Check that none of the new constants already exists.
         bad_constants = set(constants).intersection(self.constants)
         if bad_constants:
-            raise ValueError("You cannot add existing constants. "
-                             "Existing constants: %s." % list(bad_constants))
+            raise ValueError(
+                "You cannot add existing constants. "
+                "Existing constants: %s." % list(bad_constants)
+            )
 
         # Check that none of the constant is an existing attributes
         bad_constants = [c for c in constants if hasattr(self, c)]
         if bad_constants:
-            raise ValueError("You cannot add constants that already exists as attributes. "
-                             "Existing attributes: %s." % list(bad_constants))
+            raise ValueError(
+                "You cannot add constants that already exists as attributes. "
+                "Existing attributes: %s." % list(bad_constants)
+            )
 
         # Check that each new value is unique.
         values = [c[1] for c in choices]
         values_doubles = [c for c in values if values.count(c) > 1]
         if values_doubles:
-            raise ValueError("You cannot declare two choices with the same name."
-                             "Problematic values: %s " % list(set(values_doubles)))
+            raise ValueError(
+                "You cannot declare two choices with the same name."
+                "Problematic values: %s " % list(set(values_doubles))
+            )
 
         # Check that none of the new values already exists.
         try:
@@ -298,12 +306,13 @@ class Choices(list):
             raise ValueError("One value cannot be used in: %s" % list(values))
         else:
             if bad_values:
-                raise ValueError("You cannot add existing values. "
-                                 "Existing values: %s." % list(bad_values))
+                raise ValueError(
+                    "You cannot add existing values. "
+                    "Existing values: %s." % list(bad_values)
+                )
 
         # We can now add each choice.
         for choice_tuple in choices:
-
             # Convert the choice tuple in a ``ChoiceEntry`` instance if it's not already done.
             # It allows to share choice entries between a ``Choices`` instance and its subsets.
             choice_entry = choice_tuple
@@ -332,7 +341,9 @@ class Choices(list):
                 # To get values from their constant names.
                 self.CHOICES_CONST_DICT[choice_entry.constant] = choice_entry.value
                 # To get constant names from their values.
-                self.REVERTED_CHOICES_CONST_DICT[choice_entry.value] = choice_entry.constant
+                self.REVERTED_CHOICES_CONST_DICT[choice_entry.value] = (
+                    choice_entry.constant
+                )
 
         return constants
 
@@ -404,11 +415,13 @@ class Choices(list):
             choices = choices[1:]
 
         # Check for an optional subset name in the named arguments.
-        if kwargs.get('name', None):
+        if kwargs.get("name", None):
             if subset_name:
-                raise ValueError("The name of the subset cannot be defined as the first "
-                                 "argument and also as a named argument")
-            subset_name = kwargs['name']
+                raise ValueError(
+                    "The name of the subset cannot be defined as the first "
+                    "argument and also as a named argument"
+                )
+            subset_name = kwargs["name"]
 
         constants = self._convert_choices(choices)
 
@@ -418,7 +431,7 @@ class Choices(list):
             self.CHOICES = self.choices
 
         # If we have a subset name, create a new subset with all the given constants.
-        if subset_name and (not self.retro_compatibility or subset_name != 'CHOICES'):
+        if subset_name and (not self.retro_compatibility or subset_name != "CHOICES"):
             self.add_subset(subset_name, constants)
 
     def extract_subset(self, *constants):
@@ -471,8 +484,10 @@ class Choices(list):
         # Ensure that all passed constants exists as such in the list of available constants.
         bad_constants = set(constants).difference(self.constants)
         if bad_constants:
-            raise ValueError("All constants in subsets should be in parent choice. "
-                             "Missing constants: %s." % list(bad_constants))
+            raise ValueError(
+                "All constants in subsets should be in parent choice. "
+                "Missing constants: %s." % list(bad_constants)
+            )
 
         # Keep only entries we asked for.
         choice_entries = [self.constants[c] for c in constants]
@@ -484,9 +499,9 @@ class Choices(list):
         subset = self.__class__(
             *choice_entries,
             **{
-                'dict_class': self.dict_class,
-                'mutable': False,
-            }
+                "dict_class": self.dict_class,
+                "mutable": False,
+            },
         )
 
         return subset
@@ -550,14 +565,17 @@ class Choices(list):
 
         # Ensure that the name is not already used as an attribute.
         if hasattr(self, name):
-            raise ValueError("Cannot use '%s' as a subset name. "
-                             "It's already an attribute." % name)
+            raise ValueError(
+                "Cannot use '%s' as a subset name. It's already an attribute." % name
+            )
 
         # Ensure that all passed constants exists as such in the list of available constants.
         bad_constants = set(constants).difference(self.constants)
         if bad_constants:
-            raise ValueError("All constants in subsets should be in parent choice. "
-                             "Missing constants: %s." % list(bad_constants))
+            raise ValueError(
+                "All constants in subsets should be in parent choice. "
+                "Missing constants: %s." % list(bad_constants)
+            )
 
         # Keep only entries we asked for.
         choice_entries = [self.constants[c] for c in constants]
@@ -567,11 +585,13 @@ class Choices(list):
         # Also we set ``mutable`` to False to disable the possibility to add new choices to the
         # subset.
         subset = self.__class__(
-            *choice_entries, **{
-            'dict_class': self.dict_class,
-            'retro_compatibility': self.retro_compatibility,
-            'mutable': False,
-        })
+            *choice_entries,
+            **{
+                "dict_class": self.dict_class,
+                "retro_compatibility": self.retro_compatibility,
+                "mutable": False,
+            },
+        )
 
         # Make the subset accessible via an attribute.
         setattr(self, name, subset)
@@ -595,10 +615,10 @@ class Choices(list):
                 REVERTED_SUBSET_CONST_DICT[choice_entry.value] = choice_entry.constant
 
             # Prefix each quick-access dict by the name of the subset
-            setattr(self, '%s_DICT' % name, SUBSET_DICT)
-            setattr(self, 'REVERTED_%s_DICT' % name, REVERTED_SUBSET_DICT)
-            setattr(self, '%s_CONST_DICT' % name, SUBSET_CONST_DICT)
-            setattr(self, 'REVERTED_%s_CONST_DICT' % name, REVERTED_SUBSET_CONST_DICT)
+            setattr(self, "%s_DICT" % name, SUBSET_DICT)
+            setattr(self, "REVERTED_%s_DICT" % name, REVERTED_SUBSET_DICT)
+            setattr(self, "%s_CONST_DICT" % name, SUBSET_CONST_DICT)
+            setattr(self, "REVERTED_%s_CONST_DICT" % name, REVERTED_SUBSET_CONST_DICT)
 
     def for_constant(self, constant):
         """Returns the ``ChoiceEntry`` for the given constant.
@@ -843,7 +863,7 @@ class Choices(list):
 
         """
 
-        return '%s' % self.entries
+        return "%s" % self.entries
 
     def __eq__(self, other):
         """Override to allow comparison with a tuple of choices, not only a list.
@@ -916,17 +936,17 @@ class Choices(list):
                         [
                             c.original_value
                             for c in getattr(self, subset_name).constants.keys()
-                        ]
+                        ],
                     )
                     for subset_name in self.subsets
                 ],
                 # Extra kwargs to pass to ``__ini__``
                 {
-                    'dict_class': self.dict_class,
-                    'retro_compatibility': self.retro_compatibility,
-                    'mutable': self._mutable,
-                }
-            )
+                    "dict_class": self.dict_class,
+                    "retro_compatibility": self.retro_compatibility,
+                    "mutable": self._mutable,
+                },
+            ),
         )
 
 
@@ -960,8 +980,8 @@ class OrderedChoices(Choices):
     def __init__(self, *choices, **kwargs):
 
         # Class to use for dicts
-        if 'dict_class' not in kwargs:
-            kwargs['dict_class'] = OrderedDict
+        if "dict_class" not in kwargs:
+            kwargs["dict_class"] = OrderedDict
 
         super(OrderedChoices, self).__init__(*choices, **kwargs)
 
@@ -993,10 +1013,14 @@ class AutoDisplayChoices(OrderedChoices):
 
     """
 
-    display_transform = staticmethod(lambda const: const.lower().replace('_', ' ').capitalize())
+    display_transform = staticmethod(
+        lambda const: const.lower().replace("_", " ").capitalize()
+    )
 
     def __init__(self, *choices, **kwargs):
-        self.display_transform = kwargs.pop('display_transform', None) or self.display_transform
+        self.display_transform = (
+            kwargs.pop("display_transform", None) or self.display_transform
+        )
         super(AutoDisplayChoices, self).__init__(*choices, **kwargs)
 
     def _convert_choices(self, choices):
@@ -1004,7 +1028,6 @@ class AutoDisplayChoices(OrderedChoices):
 
         final_choices = []
         for choice in choices:
-
             if isinstance(choice, ChoiceEntry):
                 final_choices.append(choice)
                 continue
@@ -1013,7 +1036,9 @@ class AutoDisplayChoices(OrderedChoices):
             choice = list(choice)
             length = len(choice)
 
-            assert 2 <= length <= 4, 'Invalid number of entries in %s' % (original_choice,)
+            assert 2 <= length <= 4, "Invalid number of entries in %s" % (
+                original_choice,
+            )
 
             final_choice = []
 
@@ -1022,7 +1047,10 @@ class AutoDisplayChoices(OrderedChoices):
                 final_choice.append(choice.pop())
             elif length == 4:
                 attributes = choice.pop()
-                assert attributes is None or isinstance(attributes, Mapping), 'Last argument must be a dict-like object in %s' % (original_choice,)
+                assert attributes is None or isinstance(attributes, Mapping), (
+                    "Last argument must be a dict-like object in %s"
+                    % (original_choice,)
+                )
                 if attributes:
                     final_choice.append(attributes)
 
@@ -1085,19 +1113,22 @@ class AutoChoices(AutoDisplayChoices):
     value_transform = staticmethod(lambda const: const.lower())
 
     def __init__(self, *choices, **kwargs):
-        self.value_transform = kwargs.pop('value_transform', None) or self.value_transform
+        self.value_transform = (
+            kwargs.pop("value_transform", None) or self.value_transform
+        )
         super(AutoChoices, self).__init__(*choices, **kwargs)
 
     def add_choices(self, *choices, **kwargs):
         """Disallow super method to thing the first argument is a subset name"""
-        return super(AutoChoices, self).add_choices(_NO_SUBSET_NAME_, *choices, **kwargs)
+        return super(AutoChoices, self).add_choices(
+            _NO_SUBSET_NAME_, *choices, **kwargs
+        )
 
     def _convert_choices(self, choices):
         """Auto create db values then call super method"""
 
         final_choices = []
         for choice in choices:
-
             if isinstance(choice, ChoiceEntry):
                 final_choices.append(choice)
                 continue
@@ -1106,13 +1137,17 @@ class AutoChoices(AutoDisplayChoices):
             if isinstance(choice, str):
                 if choice == _NO_SUBSET_NAME_:
                     continue
-                choice = [choice, ]
+                choice = [
+                    choice,
+                ]
             else:
                 choice = list(choice)
 
             length = len(choice)
 
-            assert 1 <= length <= 4, 'Invalid number of entries in %s' % (original_choice,)
+            assert 1 <= length <= 4, "Invalid number of entries in %s" % (
+                original_choice,
+            )
 
             final_choice = []
 
@@ -1121,7 +1156,10 @@ class AutoChoices(AutoDisplayChoices):
                 final_choice.append(choice.pop())
             elif length == 4:
                 attributes = choice.pop()
-                assert attributes is None or isinstance(attributes, Mapping), 'Last argument must be a dict-like object in %s' % (original_choice,)
+                assert attributes is None or isinstance(attributes, Mapping), (
+                    "Last argument must be a dict-like object in %s"
+                    % (original_choice,)
+                )
                 if attributes:
                     final_choice.append(attributes)
 

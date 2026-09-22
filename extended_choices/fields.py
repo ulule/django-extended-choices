@@ -20,13 +20,16 @@ class NamedExtendedChoiceFormField(forms.Field):
     Should not be very useful in normal HTML form, but if API validation is done via a form, it
     will to have more readable constants in the API that values
     """
+
     def __init__(self, choices, *args, **kwargs):
         """Override to ensure that the ``choices`` argument is a ``Choices`` object."""
 
         super(NamedExtendedChoiceFormField, self).__init__(*args, **kwargs)
 
         if not isinstance(choices, Choices):
-            raise ValueError("`choices` must be an instance of `extended_choices.Choices`.")
+            raise ValueError(
+                "`choices` must be an instance of `extended_choices.Choices`."
+            )
 
         self.choices = choices
 
@@ -41,17 +44,18 @@ class NamedExtendedChoiceFormField(forms.Field):
         if not isinstance(value, str):
             raise forms.ValidationError(
                 "Invalid value type (should be a string).",
-                code='invalid-choice-type',
+                code="invalid-choice-type",
             )
 
         # Get the constant from the choices object, raising if it doesn't exist.
         try:
             final = getattr(self.choices, value)
         except AttributeError:
-            available = '[%s]' % ', '.join(self.choices.constants)
+            available = "[%s]" % ", ".join(self.choices.constants)
             raise forms.ValidationError(
-                "Invalid value (not in available choices. Available ones are: %s" % available,
-                code='non-existing-choice',
+                "Invalid value (not in available choices. Available ones are: %s"
+                % available,
+                code="non-existing-choice",
             )
 
         return final

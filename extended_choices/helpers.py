@@ -154,11 +154,15 @@ class ChoiceAttributeMixin(object):
         # Create a new class only if it wasn't already created for this type.
         if type_ not in cls._classes_by_type:
             # Compute the name of the class with the name of the type.
-            class_name = str('%sChoiceAttribute' % type_.__name__.capitalize())
+            class_name = str("%sChoiceAttribute" % type_.__name__.capitalize())
             # Create a new class and save it in the cache.
-            cls._classes_by_type[type_] = type(class_name, (cls, type_), {
-                'creator_type': cls,
-            })
+            cls._classes_by_type[type_] = type(
+                class_name,
+                (cls, type_),
+                {
+                    "creator_type": cls,
+                },
+            )
 
         # Return the class from the cache based on the type.
         return cls._classes_by_type[type_]
@@ -184,8 +188,8 @@ class ChoiceAttributeMixin(object):
                 # The original type of the current value
                 self.original_value,
                 # The tied `choice_entry`
-                self.choice_entry
-            )
+                self.choice_entry,
+            ),
         )
 
     def __bool__(self):
@@ -271,15 +275,23 @@ class ChoiceEntry(tuple):
         """Construct the tuple with 3 entries, and save optional attributes from the 4th one."""
 
         # Ensure we have exactly 3 entries in the tuple and an optional dict.
-        assert 3 <= len(tuple_) <= 4, 'Invalid number of entries in %s' % (tuple_,)
+        assert 3 <= len(tuple_) <= 4, "Invalid number of entries in %s" % (tuple_,)
 
         attributes = None
         if len(tuple_) == 4:
             attributes = tuple_[3]
-            assert attributes is None or isinstance(attributes, Mapping), 'Last argument must be a dict-like object in %s' % (tuple_,)
+            assert attributes is None or isinstance(attributes, Mapping), (
+                "Last argument must be a dict-like object in %s" % (tuple_,)
+            )
             if attributes:
-                for invalid_key in {'constant', 'value', 'display'}:
-                    assert invalid_key not in attributes, 'Additional attributes cannot contain one named "%s" in %s' % (invalid_key, tuple_,)
+                for invalid_key in {"constant", "value", "display"}:
+                    assert invalid_key not in attributes, (
+                        'Additional attributes cannot contain one named "%s" in %s'
+                        % (
+                            invalid_key,
+                            tuple_,
+                        )
+                    )
 
         # Call the ``tuple`` constructor with only the real tuple entries.
         obj = super(ChoiceEntry, cls).__new__(cls, tuple_[:3])
@@ -321,8 +333,10 @@ class ChoiceEntry(tuple):
         """
 
         if value is None:
-            raise ValueError('Using `None` in a `Choices` object is not supported. You may '
-                             'use an empty string.')
+            raise ValueError(
+                "Using `None` in a `Choices` object is not supported. You may "
+                "use an empty string."
+            )
 
         return create_choice_attribute(self.ChoiceAttributeMixin, value, self)
 
@@ -347,7 +361,7 @@ class ChoiceEntry(tuple):
                     self.constant.original_value,
                     self.value.original_value,
                     self.display.original_value,
-                    self.attributes
+                    self.attributes,
                 ),
-            )
+            ),
         )
