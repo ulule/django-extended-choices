@@ -9,12 +9,27 @@ The documentation format in this file is numpydoc_.
 
 """
 
+from __future__ import annotations
+
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Mapping as MappingType,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+)
+
 try:
     from collections.abc import Mapping
 except ImportError:
-    from collections import Mapping
+    from collections import Mapping  # type: ignore[attr-defined]
 
 from django.utils.functional import Promise
+
+_AttrT = TypeVar("_AttrT", bound="ChoiceAttributeMixin")
 
 
 class ChoiceAttributeMixin(object):
@@ -66,7 +81,14 @@ class ChoiceAttributeMixin(object):
 
     """
 
-    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
+    # Set on the classes created by ``get_class_for_value`` (and the instances, in ``__init__``).
+    creator_type: Type[ChoiceAttributeMixin]
+    choice_entry: ChoiceEntry
+    original_value: Any
+
+    def __new__(  # pylint: disable=unused-argument
+        cls: Type[_AttrT], *args: Any, **kwargs: Any
+    ) -> _AttrT:
         """Construct the object (the other class used with this mixin).
 
         Notes
@@ -81,9 +103,11 @@ class ChoiceAttributeMixin(object):
             # Special case to manage lazy django stuff like ugettext_lazy
             return super(ChoiceAttributeMixin, cls).__new__(cls)
 
+        # The mixin is combined with another type (``int``, ``str``...) whose ``__new__`` takes
+        # the value: ``object.__new__`` is never the one reached with arguments.
         return super(ChoiceAttributeMixin, cls).__new__(cls, *args[:1])
 
-    def __init__(self, value, choice_entry):
+    def __init__(self, value: Any, choice_entry: ChoiceEntry) -> None:
         """Initiate the object to save the value and the choice entry.
 
         Parameters
@@ -116,22 +140,22 @@ class ChoiceAttributeMixin(object):
                 setattr(self, key, value)
 
     @property
-    def constant(self):
+    def constant(self) -> str:
         """Property that returns the ``constant`` attribute of the attached ``ChoiceEntry``."""
         return self.choice_entry.constant
 
     @property
-    def value(self):
+    def value(self) -> Any:
         """Property that returns the ``value`` attribute of the attached ``ChoiceEntry``."""
         return self.choice_entry.value
 
     @property
-    def display(self):
+    def display(self) -> Any:
         """Property that returns the ``display`` attribute of the attached ``ChoiceEntry``."""
         return self.choice_entry.display
 
     @classmethod
-    def get_class_for_value(cls, value):
+    def get_class_for_value(cls, value: Any) -> Type[ChoiceAttributeMixin]:
         """Class method to construct a class based on this mixin and the type of the given value.
 
         Parameters
@@ -167,7 +191,7 @@ class ChoiceAttributeMixin(object):
         # Return the class from the cache based on the type.
         return cls._classes_by_type[type_]
 
-    def __reduce__(self):
+    def __reduce__(self) -> Tuple[Any, ...]:
         """Reducer to make the auto-created classes picklable.
 
         Returns
@@ -192,14 +216,16 @@ class ChoiceAttributeMixin(object):
             ),
         )
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         """Use the original value to know if the value is truthy of falsy"""
         return bool(self.original_value)
 
-    _classes_by_type = {}
+    _classes_by_type: ClassVar[Dict[type, Type[ChoiceAttributeMixin]]] = {}
 
 
-def create_choice_attribute(creator_type, value, choice_entry):
+def create_choice_attribute(
+    creator_type: Type[ChoiceAttributeMixin], value: Any, choice_entry: ChoiceEntry
+) -> ChoiceAttributeMixin:
     """Create an instance of a subclass of ChoiceAttributeMixin for the given value.
 
     Parameters
@@ -224,7 +250,11 @@ def create_choice_attribute(creator_type, value, choice_entry):
     return klass(value, choice_entry)
 
 
-class ChoiceEntry(tuple):
+# Alias usable in ``ChoiceEntry`` where the name ``ChoiceAttributeMixin`` is shadowed by the attribute.
+_Mixin = ChoiceAttributeMixin
+
+
+class ChoiceEntry(Tuple[Any, ...]):
     """Represents a choice in a ``Choices`` object, with easy access to its attribute.
 
     Expecting a tuple with three entries. (constant, value, display name), it will add three
@@ -268,10 +298,19 @@ class ChoiceEntry(tuple):
 
     """
 
-    # Allow to easily change the mixin to use in subclasses.
-    ChoiceAttributeMixin = ChoiceAttributeMixin
+    # Set in ``__new__``. ``constant``, ``value`` and ``display`` are also instances of the type of
+    # the original entry (a ``str`` for ``constant``), hence the lie about ``str`` for the former:
+    # the others are ``Any`` as there is no way to express "``T`` and ``ChoiceAttributeMixin``".
+    attributes: Optional[MappingType[str, Any]]
+    constant: str
+    value: Any
+    display: Any
+    choice: Tuple[Any, Any]
 
-    def __new__(cls, tuple_):
+    # Allow to easily change the mixin to use in subclasses.
+    ChoiceAttributeMixin: Type[_Mixin] = ChoiceAttributeMixin
+
+    def __new__(cls, tuple_: Tuple[Any, ...]) -> ChoiceEntry:
         """Construct the tuple with 3 entries, and save optional attributes from the 4th one."""
 
         # Ensure we have exactly 3 entries in the tuple and an optional dict.
@@ -313,7 +352,7 @@ class ChoiceEntry(tuple):
 
         return obj
 
-    def _get_choice_attribute(self, value):
+    def _get_choice_attribute(self, value: Any) -> Any:
         """Get a choice attribute for the given value.
 
         Parameters
@@ -340,7 +379,7 @@ class ChoiceEntry(tuple):
 
         return create_choice_attribute(self.ChoiceAttributeMixin, value, self)
 
-    def __reduce__(self):
+    def __reduce__(self) -> Tuple[Any, ...]:
         """Reducer to pass attributes when pickling.
 
         Returns
@@ -358,7 +397,8 @@ class ChoiceEntry(tuple):
             # The original values of the tuple, and attributes (we pass a tuple as single argument)
             (
                 (
-                    self.constant.original_value,
+                    # ``constant`` is typed ``str`` but is also a ``ChoiceAttributeMixin``.
+                    self.constant.original_value,  # type: ignore[attr-defined]
                     self.value.original_value,
                     self.display.original_value,
                     self.attributes,
