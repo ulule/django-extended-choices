@@ -9,6 +9,10 @@ The documentation format in this file is `numpydoc`_.
 
 """
 
+from __future__ import annotations
+
+from typing import Any
+
 from django import forms
 
 from . import Choices
@@ -21,7 +25,7 @@ class NamedExtendedChoiceFormField(forms.Field):
     will to have more readable constants in the API that values
     """
 
-    def __init__(self, choices, *args, **kwargs):
+    def __init__(self, choices: Choices, *args: Any, **kwargs: Any) -> None:
         """Override to ensure that the ``choices`` argument is a ``Choices`` object."""
 
         super(NamedExtendedChoiceFormField, self).__init__(*args, **kwargs)
@@ -33,7 +37,7 @@ class NamedExtendedChoiceFormField(forms.Field):
 
         self.choices = choices
 
-    def to_python(self, value):
+    def to_python(self, value: Any) -> Any:
         """Convert the constant to the real choice value."""
 
         # ``is_required`` is already checked in ``validate``.

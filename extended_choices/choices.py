@@ -58,12 +58,26 @@ The documentation format in this file is numpydoc_.
 
 """
 
+from __future__ import annotations
+
 from collections import OrderedDict
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Tuple,
+    Type,
+    TypeVar,
+    overload,
+)
 
 try:
     from collections.abc import Mapping
 except ImportError:
-    from collections import Mapping
+    from collections import Mapping  # type: ignore[attr-defined]
 
 from .helpers import ChoiceEntry
 
@@ -76,8 +90,10 @@ __all__ = [
 
 _NO_SUBSET_NAME_ = "__NO_SUBSET_NAME__"
 
+_C = TypeVar("_C", bound="Choices")
 
-class Choices(list):
+
+class Choices(List[Tuple[Any, Any]]):
     """Helper class for choices fields in Django
 
     A choice entry has three representation: constant name, value and
@@ -193,9 +209,36 @@ class Choices(list):
     """
 
     # Allow to easily change the ``ChoiceEntry`` class to use in subclasses.
-    ChoiceEntryClass = ChoiceEntry
+    ChoiceEntryClass: Type[ChoiceEntry] = ChoiceEntry
 
-    def __init__(self, *choices, **kwargs):
+    dict_class: Type[Dict[Any, Any]]
+    entries: List[ChoiceEntry]
+    subsets: List[str]
+    constants: Dict[str, ChoiceEntry]
+    values: Dict[Any, ChoiceEntry]
+    displays: Dict[Any, ChoiceEntry]
+    retro_compatibility: bool
+    _mutable: bool
+
+    # Only set when ``retro_compatibility`` is on (the default).
+    CHOICES: Tuple[Tuple[Any, Any], ...]
+    CHOICES_DICT: Dict[Any, Any]
+    REVERTED_CHOICES_DICT: Dict[Any, Any]
+    CHOICES_CONST_DICT: Dict[Any, Any]
+    REVERTED_CHOICES_CONST_DICT: Dict[Any, str]
+
+    if TYPE_CHECKING:
+        # Constants (and subsets, with their ``<NAME>_DICT`` attributes) are set dynamically as
+        # attributes, with a value of the type of the one given in the choice: only known at
+        # runtime, hence ``Any``. Defined for type checkers only, there is no ``__getattr__`` at
+        # runtime.
+        def __getattr__(self, name: str) -> Any: ...
+
+    # ``*choices`` are tuples (``(constant, value, display[, attributes])``) or ``ChoiceEntry``
+    # instances, the first one possibly being the name of a subset, and ``**kwargs`` are
+    # ``dict_class``, ``retro_compatibility``, ``mutable`` and ``name``: all read with ``.get``,
+    # so kept as ``Any``.
+    def __init__(self, *choices: Any, **kwargs: Any) -> None:
 
         # Init the list as empty. Entries will be formatted for django and added in
         # ``add_choices``.
@@ -237,7 +280,7 @@ class Choices(list):
         self._mutable = kwargs.get("mutable", True)
 
     @property
-    def choices(self):
+    def choices(self) -> Tuple[Tuple[Any, Any], ...]:
         """Property that returns a tuple formatted as expected by Django.
 
         Example
@@ -250,7 +293,7 @@ class Choices(list):
         """
         return tuple(self)
 
-    def _convert_choices(self, choices):
+    def _convert_choices(self, choices: Iterable[Any]) -> List[Any]:
         """Validate each choices
 
         Parameters
@@ -283,11 +326,11 @@ class Choices(list):
             )
 
         # Check that none of the constant is an existing attributes
-        bad_constants = [c for c in constants if hasattr(self, c)]
-        if bad_constants:
+        bad_attributes = [c for c in constants if hasattr(self, c)]
+        if bad_attributes:
             raise ValueError(
                 "You cannot add constants that already exists as attributes. "
-                "Existing attributes: %s." % list(bad_constants)
+                "Existing attributes: %s." % list(bad_attributes)
             )
 
         # Check that each new value is unique.
@@ -347,7 +390,7 @@ class Choices(list):
 
         return constants
 
-    def add_choices(self, *choices, **kwargs):
+    def add_choices(self, *choices: Any, **kwargs: Any) -> None:
         """Add some choices to the current ``Choices`` instance.
 
         The given choices will be added to the existing choices.
@@ -434,7 +477,7 @@ class Choices(list):
         if subset_name and (not self.retro_compatibility or subset_name != "CHOICES"):
             self.add_subset(subset_name, constants)
 
-    def extract_subset(self, *constants):
+    def extract_subset(self: _C, *constants: str) -> _C:
         """Create a subset of entries
 
         This subset is a new ``Choices`` instance, with only the wanted constants from the
@@ -506,7 +549,7 @@ class Choices(list):
 
         return subset
 
-    def add_subset(self, name, constants):
+    def add_subset(self, name: str, constants: Iterable[str]) -> None:
         """Add a subset of entries under a defined name.
 
         This allow to defined a "sub choice" if a django field need to not have the whole
@@ -620,7 +663,7 @@ class Choices(list):
             setattr(self, "%s_CONST_DICT" % name, SUBSET_CONST_DICT)
             setattr(self, "REVERTED_%s_CONST_DICT" % name, REVERTED_SUBSET_CONST_DICT)
 
-    def for_constant(self, constant):
+    def for_constant(self, constant: str) -> ChoiceEntry:
         """Returns the ``ChoiceEntry`` for the given constant.
 
         Parameters
@@ -655,7 +698,7 @@ class Choices(list):
 
         return self.constants[constant]
 
-    def for_value(self, value):
+    def for_value(self, value: Any) -> ChoiceEntry:
         """Returns the ``ChoiceEntry`` for the given value.
 
         Parameters
@@ -690,7 +733,7 @@ class Choices(list):
 
         return self.values[value]
 
-    def for_display(self, display):
+    def for_display(self, display: Any) -> ChoiceEntry:
         """Returns the ``ChoiceEntry`` for the given display name.
 
         Parameters
@@ -725,7 +768,7 @@ class Choices(list):
 
         return self.displays[display]
 
-    def has_constant(self, constant):
+    def has_constant(self, constant: str) -> bool:
         """Check if the current ``Choices`` object has the given constant.
 
         Parameters
@@ -751,7 +794,7 @@ class Choices(list):
 
         return constant in self.constants
 
-    def has_value(self, value):
+    def has_value(self, value: Any) -> bool:
         """Check if the current ``Choices`` object has the given value.
 
         Parameters
@@ -777,7 +820,7 @@ class Choices(list):
 
         return value in self.values
 
-    def has_display(self, display):
+    def has_display(self, display: Any) -> bool:
         """Check if the current ``Choices`` object has the given display name.
 
         Parameters
@@ -803,7 +846,7 @@ class Choices(list):
 
         return display in self.displays
 
-    def __contains__(self, item):
+    def __contains__(self, item: object) -> bool:
         """Check if the current ``Choices`` object has the given value.
 
         Example
@@ -819,7 +862,15 @@ class Choices(list):
 
         return self.has_value(item)
 
-    def __getitem__(self, key):
+    # An ``int`` indexes the underlying list (slices are not supported), a ``str`` returns the
+    # attribute of that name.
+    @overload  # type: ignore[override]
+    def __getitem__(self, key: int) -> Tuple[Any, Any]: ...
+
+    @overload
+    def __getitem__(self, key: str) -> Any: ...
+
+    def __getitem__(self, key: Any) -> Any:
         """Return the attribute having the given name for the current instance
 
         It allows for example to retrieve constant by keys instead of by attributes (as constants
@@ -845,7 +896,7 @@ class Choices(list):
 
         return getattr(self, key)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """String representation of this ``Choices`` instance.
 
         Notes
@@ -865,7 +916,7 @@ class Choices(list):
 
         return "%s" % self.entries
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         """Override to allow comparison with a tuple of choices, not only a list.
 
         It also allow to compare with default django choices, ie (value, display name), or
@@ -899,7 +950,7 @@ class Choices(list):
 
     # TODO: implement __iadd__ and __add__
 
-    def __reduce__(self):
+    def __reduce__(self) -> Tuple[Any, ...]:
         """Reducer to make the auto-created classes picklable.
 
         Returns
@@ -920,7 +971,8 @@ class Choices(list):
                 # The list of choices
                 [
                     (
-                        entry.constant.original_value,
+                        # ``constant`` is typed ``str`` but is also a ``ChoiceAttributeMixin``.
+                        entry.constant.original_value,  # type: ignore[attr-defined]
                         entry.value.original_value,
                         entry.display.original_value,
                         entry.attributes,
@@ -977,7 +1029,7 @@ class OrderedChoices(Choices):
 
     """
 
-    def __init__(self, *choices, **kwargs):
+    def __init__(self, *choices: Any, **kwargs: Any) -> None:
 
         # Class to use for dicts
         if "dict_class" not in kwargs:
@@ -1013,20 +1065,21 @@ class AutoDisplayChoices(OrderedChoices):
 
     """
 
-    display_transform = staticmethod(
+    display_transform: Callable[[str], str] = staticmethod(
         lambda const: const.lower().replace("_", " ").capitalize()
     )
 
-    def __init__(self, *choices, **kwargs):
+    def __init__(self, *choices: Any, **kwargs: Any) -> None:
         self.display_transform = (
             kwargs.pop("display_transform", None) or self.display_transform
         )
         super(AutoDisplayChoices, self).__init__(*choices, **kwargs)
 
-    def _convert_choices(self, choices):
+    def _convert_choices(self, choices: Iterable[Any]) -> List[Any]:
         """Auto create display values then call super method"""
 
-        final_choices = []
+        # ``ChoiceEntry`` instances, or lists later converted by ``ChoiceEntry``.
+        final_choices: List[Any] = []
         for choice in choices:
             if isinstance(choice, ChoiceEntry):
                 final_choices.append(choice)
@@ -1110,24 +1163,25 @@ class AutoChoices(AutoDisplayChoices):
 
     """
 
-    value_transform = staticmethod(lambda const: const.lower())
+    value_transform: Callable[[str], str] = staticmethod(lambda const: const.lower())
 
-    def __init__(self, *choices, **kwargs):
+    def __init__(self, *choices: Any, **kwargs: Any) -> None:
         self.value_transform = (
             kwargs.pop("value_transform", None) or self.value_transform
         )
         super(AutoChoices, self).__init__(*choices, **kwargs)
 
-    def add_choices(self, *choices, **kwargs):
+    def add_choices(self, *choices: Any, **kwargs: Any) -> None:
         """Disallow super method to thing the first argument is a subset name"""
         return super(AutoChoices, self).add_choices(
             _NO_SUBSET_NAME_, *choices, **kwargs
         )
 
-    def _convert_choices(self, choices):
+    def _convert_choices(self, choices: Iterable[Any]) -> List[Any]:
         """Auto create db values then call super method"""
 
-        final_choices = []
+        # ``ChoiceEntry`` instances, or lists later converted by ``ChoiceEntry``.
+        final_choices: List[Any] = []
         for choice in choices:
             if isinstance(choice, ChoiceEntry):
                 final_choices.append(choice)
@@ -1185,7 +1239,12 @@ class AutoChoices(AutoDisplayChoices):
         return super(AutoChoices, self)._convert_choices(final_choices)
 
 
-def create_choice(klass, choices, subsets, kwargs):
+def create_choice(
+    klass: Type[_C],
+    choices: Iterable[Any],
+    subsets: Iterable[Tuple[str, Iterable[str]]],
+    kwargs: Dict[str, Any],
+) -> _C:
     """Create an instance of a ``Choices`` object.
 
     Parameters
